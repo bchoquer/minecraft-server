@@ -1,0 +1,19 @@
+---
+- name: Run Minecraft Docker container
+  hosts: launched
+  become: yes
+  tasks:
+    - name: Pull Minecraft Docker image
+      docker_image:
+        name: itzg/minecraft-server
+        source: pull
+
+    - name: Run Minecraft Docker container
+      docker_container:
+        name: minecraft
+        image: itzg/minecraft-server
+        state: started
+        ports:
+          - "25565:25565"
+        env:
+          EULA: "TRUE"
