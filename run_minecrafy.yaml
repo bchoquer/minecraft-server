@@ -1,19 +1,67 @@
 ---
-- name: Run Minecraft Docker container
+- name: Install Docker and Run Minecraft Server
   hosts: launched
   become: yes
   tasks:
-    - name: Pull Minecraft Docker image
-      docker_image:
-        name: itzg/minecraft-server
-        source: pull
+    - name: Install required packages for Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
 
-    - name: Run Minecraft Docker container
-      docker_container:
-        name: minecraft
-        image: itzg/minecraft-server
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Start Docker service
+      systemd:
+        name: docker
         state: started
-        ports:
-          - "25565:25565"
-        env:
-          EULA: "TRUE"
+        enabled: yes
+
+    - name: Create systemd service file for Minecraft Docker container
+      copy:
+        content: |
+          [Unit]
+          Description=Minecraft Server Container
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Restart=always
+          ExecStartPre=/usr/bin/docker pull itzg/minecraft-server
+          ExecStart=/usr/bin/docker run --rm --name minecraft -p 25565:25565 -e EULA=TRUE itzg/minecraft-server
+          ExecStop=/usr/bin/docker stop minecraft
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/minecraft.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd to apply the new service
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start the Minecraft service
+      systemd:
+        name: minecraft
+        state: started
+        enabled: yes
+
