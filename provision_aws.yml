@@ -19,21 +19,23 @@
     - name: Find the instance with the specific tag
       set_fact:
         named_instance: "{{ ec2.instances | selectattr('tags.Name', 'equalto', 'minecraft-server') | first }}"
+   
+    - name: Debug named instance
+      debug:
+        var: named_instance
 
-    - name: Add new instance to group
-      add_host:
-        hostname: "{{ named_instance.public_ip_address }}"
-        groupname: launched
+    - name: Wait for instance public IP to be available
+      local_action:
+        module: wait_for
+        host: "{{ named_instance.public_ip_address }}"
+        port: 22
+        delay: 60
+        timeout: 320
+        state: started
+      until: named_instance.public_ip_address is defined and named_instance.public_ip_address != ''
+      retries: 10
+      delay: 30
       when: named_instance is defined
-
-      #   - ec2.instances | length > 0
-      #   - ec2.instances[-1].state.name == 'running'
-      # loop_control:
-      #   loop_var: item
-      # when: ec2.instances is defined and ec2.instances | length > 0
-    # - name: Debug the ec2 variable
-    #   debug:
-    #     var: ec2.instances[0]
 
     - name: Wait for instance to start 
       wait_for:
@@ -42,6 +44,12 @@
         delay: 60
         timeout: 320
         state: started
+      when: named_instance is defined
+
+    - name: Add new instance to group
+      add_host:
+        hostname: "{{ named_instance.public_ip_address }}"
+        groupname: launched
       when: named_instance is defined
 
     #adding playbook tmp inventory folder is needed 
@@ -56,7 +64,7 @@
       copy:
         content: |
           [launched]
-          {{ named_instance.public_ip }}
+          {{ named_instance.public_ip_address }} ansible_user=ubuntu 
         dest: /tmp/ansible-inventory/hosts
       # when:
       #   - ec2.instances is defined
