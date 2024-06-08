@@ -24,7 +24,7 @@ AWS instance -> Runs Docker -> Dockcer runs Minecraft server -> minecraft system
 
 **Step 1: Provision Minecraft AWS instance**
 ```sh
-ansible-playbook aws_instance_setup.yml
+ansible-playbook provision_aws.yml
 ```
 
 **Step 2: Install and configure Docker**
