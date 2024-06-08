@@ -13,12 +13,12 @@
         count: 1
         wait: yes
         tags:
-          Name: minecraft-server1
+          Name: minecraft-servers1
       register: ec2
 
     - name: Find the instance with the specific tag
       set_fact:
-        named_instance: "{{ ec2.instances | selectattr('tags.Name', 'equalto', 'minecraft-server1') | first }}"
+        named_instance: "{{ ec2.instances | selectattr('tags.Name', 'equalto', 'minecraft-servers1') | first }}"
       when: ec2.instances | length > 0
 
     # - name: Debug named_instance
